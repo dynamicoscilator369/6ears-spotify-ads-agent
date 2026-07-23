@@ -1,7 +1,7 @@
 {
   "name": "6ears-spotify-ads",
-  "version": "0.1.0",
-  "description": "6EARS Spotify Ads Manager Agent CLI — knowledge pack, local profiles, approval-gated agent client",
+  "version": "0.2.0",
+  "description": "6EARS Spotify Ads Manager · Copilot Cockpit — interactive TUI + knowledge + approval-gated agent client",
   "type": "module",
   "bin": {
     "6ears-spotify-ads": "./bin/6ears-spotify-ads.js"
@@ -43,5 +43,9 @@
   "homepage": "https://github.com/6ears/spotify-ads-agent#readme",
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "ink": "^5.2.1",
+    "react": "^18.3.1"
   }
 }

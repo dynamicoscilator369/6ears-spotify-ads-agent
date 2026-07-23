@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 — 2026-07-23
+
+### Copilot Cockpit
+
+- Interactive TUI: **6EARS Spotify Ads Manager · Copilot Cockpit**
+- Default entry: `6ears-spotify-ads` (no args) or `cockpit`
+- Mission log, status strip (ONLINE/OFFLINE · COPILOT), command deck
+- Slash commands: `/help` `/status` `/search` `/plan` `/prepare` `/packet` `/actions` `/approve` `/doctor`
+- Free text → knowledge search
+- Headless subcommands unchanged for scripts/CI
+
 ## 0.1.0 — 2026-07-23
 
 ### Ship readiness (Phase 6)

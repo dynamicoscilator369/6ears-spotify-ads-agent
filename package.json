@@ -1,8 +1,8 @@
 {
   "name": "6ears-spotify-ads-agent",
   "private": true,
-  "version": "0.1.0",
-  "description": "6EARS Spotify Ads Manager Agent — CLI + Cloudflare approval-gated agent",
+  "version": "0.2.0",
+  "description": "6EARS Spotify Ads Manager · Copilot Cockpit + Cloudflare approval-gated agent",
   "workspaces": [
     "packages/cli",
     "packages/agent",

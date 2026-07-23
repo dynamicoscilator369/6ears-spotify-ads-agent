@@ -33,10 +33,12 @@ function assertArtistSlug(slug) {
 }
 
 function printHelp() {
-  console.log(`6ears-spotify-ads — 6EARS Spotify Ads Manager Agent CLI
+  console.log(`6ears-spotify-ads — 6EARS Spotify Ads Manager · Copilot Cockpit
 
 Usage:
-  6ears-spotify-ads <command> [args]
+  6ears-spotify-ads              Open interactive Copilot Cockpit
+  6ears-spotify-ads cockpit      Same
+  6ears-spotify-ads <command>    Headless CLI (scripts / CI)
 
 Local / knowledge:
   setup                   Interactive local config (actor, base URL, optional key)
@@ -540,6 +542,32 @@ async function cmdMetricsIngest(file, slug) {
 
 export async function main(argv) {
   const [cmd, sub, ...rest] = argv;
+
+  // Interactive Copilot Cockpit (default)
+  if (
+    !cmd ||
+    cmd === "cockpit" ||
+    cmd === "ui" ||
+    cmd === "tui" ||
+    cmd === "--cockpit"
+  ) {
+    const { runCockpit } = await import("./cockpit/app.js");
+    await runCockpit();
+    return;
+  }
+
+  if (cmd === "help" || cmd === "-h" || cmd === "--help") {
+    printHelp();
+    return;
+  }
+
+  // Force headless even with no other args: 6ears-spotify-ads --cli doctor
+  const args = cmd === "--cli" ? [sub, ...rest] : [cmd, sub, ...rest];
+  const [c2, s2, ...r2] = args;
+  return runCli(c2, s2, r2);
+}
+
+async function runCli(cmd, sub, rest) {
   if (!cmd || cmd === "help" || cmd === "-h" || cmd === "--help") {
     printHelp();
     return;

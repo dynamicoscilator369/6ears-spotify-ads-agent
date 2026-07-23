@@ -1,38 +1,43 @@
-# 6EARS Spotify Ads Manager Agent
+# 6EARS Spotify Ads Manager · Copilot Cockpit
 
-Terminal-first **Spotify Ads** operator for artists, managers, and labels.
+Interactive terminal **Copilot Cockpit** for Spotify Ads — plus headless CLI and an approval-gated Cloudflare agent.
 
-- **CLI** (`6ears-spotify-ads`): offline knowledge, local artist profiles, agent client  
-- **Cloudflare Agent** (`packages/agent`): approval-gated plans and spend actions  
-- **Your data only**: empty profiles — no client accounts ship in the package  
+- **Copilot Cockpit** — live mission log, status strip, command deck (`/status` `/search` `/plan` `/prepare` `/packet`)
+- **Knowledge pack** — offline Spotify Ads guidance
+- **Cloudflare Agent** — digests, distinct approve, COPILOT packets (no auto-spend by default)
+- **Your data only** — empty profiles; no client accounts in the package
 
-Default mode: **COPILOT** (plan + Ads Manager packets). Live writes require explicit gates.
+Default mode: **COPILOT**.
 
-## Install (download-ready)
-
-```bash
-npm run release:dry          # privacy + tests + pack audit
-npm install -g ./packages/cli
-# or: npm install -g ./6ears-spotify-ads-0.1.0.tgz
-6ears-spotify-ads doctor
-```
-
-## Quick start (CLI)
+## Open the cockpit
 
 ```bash
 cd 6ears-spotify-ads-agent
 npm install
-node packages/cli/bin/6ears-spotify-ads.js doctor
-node packages/cli/bin/6ears-spotify-ads.js knowledge tip launch
-node packages/cli/bin/6ears-spotify-ads.js knowledge search "audio ad script"
-node packages/cli/bin/6ears-spotify-ads.js artist init my-artist
+npm install -g ./packages/cli   # optional; ensure /opt/homebrew/bin is on PATH
+
+6ears-spotify-ads               # interactive Copilot Cockpit
+# or:
+node packages/cli/bin/6ears-spotify-ads.js cockpit
 ```
 
-Optional global link:
+Inside the cockpit:
+
+| Input | Action |
+|-------|--------|
+| free text | knowledge search |
+| `/help` | command sheet |
+| `/status` | agent mode + counts |
+| `/plan` `/prepare` `/packet` | plan & COPILOT action flow |
+| `q` | quit |
+
+## Headless CLI (scripts / CI)
 
 ```bash
-npm link -w 6ears-spotify-ads
 6ears-spotify-ads doctor
+6ears-spotify-ads knowledge tip launch
+6ears-spotify-ads knowledge search "audio ad script"
+6ears-spotify-ads artist init my-artist
 ```
 
 ## Privacy
