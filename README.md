@@ -25,11 +25,15 @@ Inside the cockpit:
 
 | Input | Action |
 |-------|--------|
-| free text | knowledge search |
+| free text | knowledge search (or LLM if `/chat on`) |
 | `/help` | command sheet |
 | `/status` | agent mode + counts |
+| `/ask …` | LLM copilot (BYO API key / OpenRouter) |
+| `/llm` | connector status · provider · key |
 | `/plan` `/prepare` `/packet` | plan & COPILOT action flow |
 | `q` | quit |
+
+LLM setup (headless or cockpit): see [docs/LLM_CONNECTORS.md](docs/LLM_CONNECTORS.md).
 
 ## Headless CLI (scripts / CI)
 

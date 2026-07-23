@@ -16,6 +16,15 @@ import {
   withActor,
 } from "../client.js";
 import { loadApiKey, loadConfig } from "../config.js";
+import { askLlm } from "../llm/ask.js";
+import {
+  clearLlmKey,
+  getLlmSettings,
+  listProviders,
+  llmStatus,
+  saveLlmKey,
+  saveLlmSettings,
+} from "../llm/config.js";
 import { pushLog } from "./state.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,7 +37,14 @@ export function helpText() {
     "Commands:",
     "  /help              this sheet",
     "  /status            refresh agent + mode",
-    "  /search <query>    knowledge pack",
+    "  /search <query>    knowledge pack only",
+    "  /ask <question>    LLM copilot (needs API key)",
+    "  /chat on|off       free text uses LLM when on",
+    "  /llm               show LLM connector status",
+    "  /llm provider <id> openrouter|openai|xai|anthropic|custom",
+    "  /llm model <name>  e.g. openai/gpt-4o-mini",
+    "  /llm key <secret>  store API key (not printed back)",
+    "  /llm clear-key     remove key for current provider",
     "  /plan              create draft plan (template)",
     "  /plans             list plans",
     "  /prepare [file]    prepare action (default: create-draft-campaign.json)",
@@ -39,8 +55,8 @@ export function helpText() {
     "  /clear             clear mission log",
     "  quit / exit / q    leave cockpit",
     "",
-    "Free text (no slash) → knowledge search.",
-    "Default mode is COPILOT — no auto-spend.",
+    "Free text → knowledge search (or LLM if /chat on).",
+    "Default mode is COPILOT — no auto-spend. Keys stay local (0600).",
   ].join("\n");
 }
 
@@ -95,7 +111,12 @@ async function runDoctor(state) {
   const cfg = loadConfig();
   next = pushLog(next, `Node ${process.versions.node}`);
   next = pushLog(next, `Config ${cfg.baseUrl} · actor ${cfg.operatorActor || "(unset)"} · default ${cfg.defaultArtist || "(unset)"}`);
-  next = pushLog(next, `API key ${loadApiKey() ? "set" : "not set"}`);
+  next = pushLog(next, `Operator key ${loadApiKey() ? "set" : "not set"}`);
+  const llm = llmStatus();
+  next = pushLog(
+    next,
+    `LLM ${llm.enabled ? "ready" : "off"} · provider ${llm.provider} · model ${llm.model || "—"} · key ${llm.keySet ? "set" : "missing"}`
+  );
   try {
     const root = knowledgeRoot();
     let n = 0;
@@ -112,6 +133,96 @@ async function runDoctor(state) {
     next = pushLog(next, `Knowledge: ${e.message}`, "err");
   }
   return refreshStatus(next);
+}
+
+async function runAsk(state, question) {
+  let next = pushLog(state, `ask: ${question.slice(0, 120)}${question.length > 120 ? "…" : ""}`);
+  next = pushLog(next, "… calling LLM (grounded on knowledge pack)", "warn");
+  try {
+    const result = await askLlm(question, {
+      session: {
+        mode: state.mode,
+        statusLine: state.statusLine,
+        artistId: state.artist?.artistId || loadConfig().defaultArtist,
+      },
+    });
+    next = pushLog(next, `LLM ${result.provider} · ${result.model} · hits ${result.knowledgeHits}`, "ok");
+    for (const line of result.content.split("\n")) {
+      next = pushLog(next, line || " ");
+    }
+  } catch (e) {
+    next = pushLog(next, e.message || String(e), "err");
+  }
+  return next;
+}
+
+function runLlmStatus(state) {
+  const s = llmStatus();
+  let next = pushLog(state, "LLM connector", "ok");
+  next = pushLog(next, `  enabled: ${s.enabled} · key: ${s.keySet ? "set" : "missing"}`);
+  next = pushLog(next, `  provider: ${s.provider} (${s.providerLabel})`);
+  next = pushLog(next, `  model: ${s.model || "—"}`);
+  next = pushLog(next, `  baseUrl: ${s.baseUrl || "—"}`);
+  next = pushLog(next, `  chatModeDefault: ${s.chatModeDefault}`);
+  next = pushLog(next, `  providers: ${s.providers.join(", ")}`);
+  next = pushLog(next, "Set key: /llm key sk-or-…   provider: /llm provider openrouter");
+  return next;
+}
+
+function runLlmCommand(state, rest) {
+  const parts = rest.trim().split(/\s+/).filter(Boolean);
+  const sub = (parts[0] || "").toLowerCase();
+  if (!sub || sub === "status") return { state: runLlmStatus(state) };
+
+  if (sub === "provider" && parts[1]) {
+    const id = parts[1].toLowerCase();
+    if (!listProviders().find((p) => p.id === id)) {
+      return {
+        state: pushLog(state, `Unknown provider. Use: ${listProviders().map((p) => p.id).join(", ")}`, "err"),
+      };
+    }
+    saveLlmSettings({ provider: id, enabled: true });
+    return { state: pushLog(state, `LLM provider → ${id}`, "ok") };
+  }
+
+  if (sub === "model" && parts[1]) {
+    const model = parts.slice(1).join(" ");
+    saveLlmSettings({ model, enabled: true });
+    return { state: pushLog(state, `LLM model → ${model}`, "ok") };
+  }
+
+  if (sub === "base" && parts[1]) {
+    saveLlmSettings({ baseUrl: parts[1], provider: "custom", enabled: true });
+    return { state: pushLog(state, `LLM baseUrl → ${parts[1]} (provider custom)`, "ok") };
+  }
+
+  if (sub === "key" && parts[1]) {
+    const key = parts.slice(1).join(" ").trim();
+    const provider = getLlmSettings().provider || "openrouter";
+    saveLlmKey(provider, key);
+    return {
+      state: pushLog(
+        state,
+        `LLM key saved for ${provider} (not displayed). Try: /ask how should I structure a 30s audio ad?`,
+        "ok"
+      ),
+    };
+  }
+
+  if (sub === "clear-key" || sub === "clearkey") {
+    const provider = getLlmSettings().provider || "openrouter";
+    clearLlmKey(provider);
+    saveLlmSettings({ enabled: false });
+    return { state: pushLog(state, `LLM key cleared for ${provider}`, "ok") };
+  }
+
+  return {
+    state: pushLog(
+      state,
+      "Usage: /llm | /llm provider <id> | /llm model <name> | /llm key <secret> | /llm clear-key",
+      "warn"
+    ),
+  };
 }
 
 function runSearch(state, query) {
@@ -379,7 +490,35 @@ export async function handleCommand(state, raw) {
     return { state: await runApprove(state, line.slice("/approve".length)) };
   }
 
-  // free text → knowledge
+  if (lower === "/llm" || lower.startsWith("/llm ")) {
+    return runLlmCommand(state, line.slice(4));
+  }
+
+  if (lower === "/ask" || lower.startsWith("/ask ")) {
+    const q = line.slice(4).trim();
+    if (!q) return { state: pushLog(state, "Usage: /ask <question>", "warn") };
+    return { state: await runAsk(state, q) };
+  }
+
+  if (lower === "/chat on" || lower === "/chat off") {
+    const on = lower.endsWith("on");
+    saveLlmSettings({ chatModeDefault: on, enabled: on ? true : getLlmSettings().enabled });
+    return {
+      state: pushLog(
+        state,
+        on
+          ? "Chat mode ON — free text goes to LLM (grounded). /search for pack-only."
+          : "Chat mode OFF — free text is knowledge search. /ask for LLM.",
+        "ok"
+      ),
+    };
+  }
+
+  // free text → LLM if chat mode + key, else knowledge search
+  const llm = getLlmSettings();
+  if (llm.chatModeDefault && llmStatus().keySet) {
+    return { state: await runAsk(state, line) };
+  }
   return { state: runSearch(state, line) };
 }
 

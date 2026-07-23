@@ -11,6 +11,15 @@
 - Free text → knowledge search
 - Headless subcommands unchanged for scripts/CI
 
+### LLM connectors (bring your own key)
+
+- Plugin-style providers: **OpenRouter**, OpenAI, xAI, Anthropic, custom OpenAI-compatible URL
+- Local keys only (`~/.config/6ears-spotify-ads/llm-*.key`, mode 0600)
+- CLI: `llm status|providers|provider|model|set-key|clear-key` · `ask <question>`
+- Cockpit: `/llm` `/ask` `/chat on|off`
+- Answers grounded on local knowledge pack + COPILOT safety rules
+- Docs: `docs/LLM_CONNECTORS.md`
+
 ## 0.1.0 — 2026-07-23
 
 ### Ship readiness (Phase 6)

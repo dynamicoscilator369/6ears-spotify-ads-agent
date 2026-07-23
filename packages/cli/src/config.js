@@ -32,9 +32,25 @@ export function loadConfig() {
       defaultArtist: null,
       // operatorApiKey is never logged; stored only if user opts in
       operatorApiKeySet: false,
+      llm: {
+        enabled: false,
+        provider: "openrouter",
+        model: null,
+        baseUrl: null,
+        chatModeDefault: false,
+      },
     };
   }
   const raw = JSON.parse(fs.readFileSync(p, "utf8"));
+  if (!raw.llm) {
+    raw.llm = {
+      enabled: false,
+      provider: "openrouter",
+      model: null,
+      baseUrl: null,
+      chatModeDefault: false,
+    };
+  }
   return raw;
 }
 

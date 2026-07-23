@@ -22,6 +22,14 @@ import {
   resolveArtistSlug,
   withActor,
 } from "./client.js";
+import { askLlm } from "./llm/ask.js";
+import {
+  clearLlmKey,
+  listProviders,
+  llmStatus,
+  saveLlmKey,
+  saveLlmSettings,
+} from "./llm/config.js";
 
 function assertArtistSlug(slug) {
   if (typeof slug !== "string" || !/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) {
@@ -66,6 +74,16 @@ Agent (requires wrangler dev / deploy + setup key):
                           (blocked when COPILOT / SPOTIFY_WRITE_ENABLED=false)
   spotify verify [slug]   Read-only ad-account verify (needs Spotify secrets)
   metrics ingest <file>   POST manual metrics observation JSON
+
+LLM connector (plugin-style; keys local only):
+  llm status              Show provider / model / key set
+  llm providers           List built-in connectors
+  llm provider <id>       openrouter | openai | xai | anthropic | custom
+  llm model <name>        e.g. openai/gpt-4o-mini
+  llm set-key [key]       Save API key (prompt if omitted; never logged)
+  llm clear-key           Remove key for current provider
+  llm base-url <url>      Custom OpenAI-compatible base URL
+  ask <question>          One-shot grounded LLM answer
 
 Config: ${configDir()}
 Knowledge: ${knowledgeRoot()}
@@ -144,6 +162,10 @@ async function cmdDoctor() {
   console.log(`  actor: ${cfg.operatorActor || "(not set)"}`);
   console.log(`  defaultArtist: ${cfg.defaultArtist || "(not set)"}`);
   console.log(`  apiKey: ${loadApiKey() ? "set" : "not set"}`);
+  const llm = llmStatus();
+  console.log(
+    `  llm: ${llm.enabled ? "ready" : "off"} · ${llm.provider} · ${llm.model || "—"} · key ${llm.keySet ? "set" : "missing"}`
+  );
 
   const kr = knowledgeRoot();
   if (fs.existsSync(path.join(kr, "PLAYBOOK.md"))) console.log(`✓ Knowledge pack at ${kr}`);
@@ -540,6 +562,105 @@ async function cmdMetricsIngest(file, slug) {
   }
 }
 
+async function cmdLlm(sub, rest) {
+  if (!sub || sub === "status") {
+    printJson(llmStatus());
+    return;
+  }
+  if (sub === "providers") {
+    for (const p of listProviders()) {
+      console.log(`${p.id.padEnd(12)} ${p.label} · default ${p.defaultModel || "—"}`);
+    }
+    return;
+  }
+  if (sub === "provider") {
+    const id = rest[0];
+    if (!id) {
+      console.error("Usage: llm provider <openrouter|openai|xai|anthropic|custom>");
+      process.exitCode = 1;
+      return;
+    }
+    if (!listProviders().find((p) => p.id === id)) {
+      console.error("Unknown provider");
+      process.exitCode = 1;
+      return;
+    }
+    saveLlmSettings({ provider: id, enabled: true });
+    console.log(`provider → ${id}`);
+    return;
+  }
+  if (sub === "model") {
+    const model = rest.join(" ").trim();
+    if (!model) {
+      console.error("Usage: llm model <name>");
+      process.exitCode = 1;
+      return;
+    }
+    saveLlmSettings({ model, enabled: true });
+    console.log(`model → ${model}`);
+    return;
+  }
+  if (sub === "base-url" || sub === "base") {
+    const url = rest[0];
+    if (!url) {
+      console.error("Usage: llm base-url https://…");
+      process.exitCode = 1;
+      return;
+    }
+    saveLlmSettings({ baseUrl: url, provider: "custom", enabled: true });
+    console.log(`baseUrl → ${url} (provider custom)`);
+    return;
+  }
+  if (sub === "set-key" || sub === "key") {
+    let key = rest.join(" ").trim();
+    if (!key) {
+      const rl = readline.createInterface({ input, output });
+      try {
+        key = (await rl.question("Paste LLM API key (input hidden not supported — clear scrollback after): ")).trim();
+      } finally {
+        rl.close();
+      }
+    }
+    if (!key) {
+      console.error("No key provided");
+      process.exitCode = 1;
+      return;
+    }
+    const st = llmStatus();
+    saveLlmKey(st.provider, key);
+    console.log(`Key saved for provider ${st.provider} (file mode 0600). Not printed.`);
+    return;
+  }
+  if (sub === "clear-key") {
+    const st = llmStatus();
+    clearLlmKey(st.provider);
+    saveLlmSettings({ enabled: false });
+    console.log(`Key cleared for ${st.provider}`);
+    return;
+  }
+  console.error(
+    "Usage: llm status|providers|provider|model|base-url|set-key|clear-key"
+  );
+  process.exitCode = 1;
+}
+
+async function cmdAsk(rest) {
+  const q = rest.join(" ").trim();
+  if (!q) {
+    console.error("Usage: ask <question>");
+    process.exitCode = 1;
+    return;
+  }
+  try {
+    const result = await askLlm(q, {});
+    console.log(`# ${result.provider} · ${result.model} · knowledge hits ${result.knowledgeHits}\n`);
+    console.log(result.content);
+  } catch (e) {
+    console.error(e.message || e);
+    process.exitCode = 1;
+  }
+}
+
 export async function main(argv) {
   const [cmd, sub, ...rest] = argv;
 
@@ -647,6 +768,12 @@ async function runCli(cmd, sub, rest) {
         console.error("Usage: metrics ingest <file.json> [slug]");
         process.exitCode = 1;
       }
+      break;
+    case "llm":
+      await cmdLlm(sub, rest);
+      break;
+    case "ask":
+      await cmdAsk([sub, ...rest].filter(Boolean));
       break;
     default:
       console.error(`Unknown command: ${cmd}`);
