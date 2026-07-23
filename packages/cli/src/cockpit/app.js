@@ -19,6 +19,31 @@ const h = React.createElement;
 const LOG_VIEWPORT = 16;
 const SCROLL_STEP = 3;
 
+/**
+ * Normalize terminal paste (incl. bracketed paste) into plain command-deck text.
+ * Newlines → spaces so multi-line clipboard still works as one command/ask.
+ */
+function sanitizePaste(raw) {
+  if (!raw) return "";
+  let s = String(raw);
+  // Bracketed paste markers (CSI 200~ / 201~)
+  s = s.replace(/\x1b\[200~/g, "").replace(/\x1b\[201~/g, "");
+  // Other stray ESC sequences
+  s = s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "");
+  // Keep printable + tabs; flatten newlines for single-line command deck
+  s = [...s]
+    .filter((ch) => {
+      const c = ch.charCodeAt(0);
+      return c === 9 || c === 10 || c === 13 || c >= 32;
+    })
+    .join("");
+  s = s.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  s = s.replace(/\n+/g, " ").replace(/\t/g, " ");
+  // Collapse runs of spaces from multi-line paste
+  s = s.replace(/ {2,}/g, " ");
+  return s;
+}
+
 function levelColor(level) {
   if (level === "ok") return "green";
   if (level === "warn") return "yellow";
@@ -271,15 +296,18 @@ function App() {
       return;
     }
 
+    // Multi-char backspace is rare; handle single
     if (key.backspace || key.delete) {
       setState((s) => setInput(s, s.input.slice(0, -1)));
       return;
     }
 
-    if (input && !key.ctrl && !key.meta && input.length === 1) {
-      const code = input.charCodeAt(0);
-      if (code >= 32) {
-        setState((s) => setInput(s, s.input + input));
+    // Paste / multi-char input (Cmd+V often arrives as one long string)
+    // Previous bug: only accepted input.length === 1, so paste was dropped.
+    if (input && !key.ctrl && !key.meta) {
+      const cleaned = sanitizePaste(input);
+      if (cleaned.length > 0) {
+        setState((s) => setInput(s, s.input + cleaned));
       }
     }
   });
