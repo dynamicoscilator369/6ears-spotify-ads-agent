@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spotify Ads Operator"
+  short_description: "Plan, review, and safely operate Spotify ads"
+  default_prompt: "Use $spotify-ads-operator to prepare an approval-gated Spotify campaign plan for the configured artist."

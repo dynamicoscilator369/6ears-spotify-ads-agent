@@ -1,0 +1,12 @@
+{
+  "slug": "my-artist",
+  "displayName": null,
+  "spotifyArtistId": null,
+  "adAccountId": null,
+  "currency": null,
+  "markets": [],
+  "dailyBudgetCeilingMinor": null,
+  "lifetimeBudgetCeilingMinor": null,
+  "goals": [],
+  "notes": null
+}

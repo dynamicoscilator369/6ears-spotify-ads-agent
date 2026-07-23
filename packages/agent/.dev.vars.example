@@ -1,0 +1,6 @@
+# Copy this file to .dev.vars for local development. Never commit .dev.vars.
+OPERATOR_API_KEY=replace-with-at-least-32-random-characters
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+SPOTIFY_REFRESH_TOKEN=
+SPOTIFY_AD_ACCOUNT_ID=

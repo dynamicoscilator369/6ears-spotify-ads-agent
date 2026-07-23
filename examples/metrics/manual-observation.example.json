@@ -1,0 +1,20 @@
+{
+  "source": "ADS_MANAGER_EXPORT",
+  "sourceNote": "Replace with export filename or redacted identifier",
+  "capturedAt": "2026-07-23T12:00:00.000Z",
+  "entityId": "REPLACE_AD_SET_ID",
+  "entityName": "Observed ad set name",
+  "budgetType": "DAILY",
+  "budgetMinor": 1500,
+  "currency": "CAD",
+  "currencyMinorUnit": 2,
+  "flightStart": "2026-07-20T00:00:00.000Z",
+  "flightEnd": "2026-07-30T23:59:59.000Z",
+  "spendMinorToday": 400,
+  "spendMinorLifetime": 1200,
+  "impressionsToday": 100,
+  "impressionsLifetime": 300,
+  "clicksToday": 2,
+  "clicksLifetime": 8,
+  "frequencyLifetime": null
+}

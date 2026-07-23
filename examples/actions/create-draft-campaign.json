@@ -1,0 +1,10 @@
+{
+  "kind": "CREATE_DRAFT_CAMPAIGN",
+  "reason": "Create a non-live draft campaign shell for review before any publish.",
+  "currency": "CAD",
+  "maxAdditionalSpendMinor": 0,
+  "expiresInHours": 24,
+  "payload": {
+    "name": "Draft — release test (no publish)"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "6ears-spotify-ads-agent",
+  "private": true,
+  "version": "0.1.0",
+  "description": "6EARS Spotify Ads Manager Agent — CLI + Cloudflare approval-gated agent",
+  "workspaces": [
+    "packages/cli",
+    "packages/agent",
+    "packages/shared"
+  ],
+  "scripts": {
+    "build": "npm run build -w 6ears-spotify-ads",
+    "cli": "npm run start -w 6ears-spotify-ads --",
+    "privacy-audit": "bash scripts/privacy-audit.sh",
+    "check-pack": "bash scripts/check-pack.sh",
+    "test": "npm run test -w 6ears-spotify-ads && npm run test -w spotify-ads-agent --if-present",
+    "pack:cli": "npm pack -w 6ears-spotify-ads",
+    "build:binary": "bash scripts/build-binary.sh",
+    "release:dry": "npm run privacy-audit && npm test && npm run check-pack",
+    "release:binary": "npm run release:dry && npm run build:binary"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

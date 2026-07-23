@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "spotify-ads-agent",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "SPOTIFY_WRITE_ENABLED": "false",
+    "REQUIRE_CF_ACCESS": "false"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SpotifyAdsAgent",
+        "class_name": "SpotifyAdsAgent"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["SpotifyAdsAgent"]
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  }
+}

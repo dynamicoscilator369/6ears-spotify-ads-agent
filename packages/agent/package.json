@@ -1,0 +1,33 @@
+{
+  "name": "spotify-ads-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "6EARS Spotify Ads approval-gated Cloudflare Agent",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typegen": "wrangler types --env-interface CloudflareEnv",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typegen && npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "agents": "0.17.4",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.18.6",
+    "@types/node": "26.1.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10",
+    "wrangler": "4.112.0"
+  },
+  "overrides": {
+    "@hono/node-server": "2.0.11"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

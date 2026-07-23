@@ -1,0 +1,9 @@
+{
+  "kind": "SET_AD_SET_DELIVERY",
+  "reason": "Pause delivery while creative review or kill rule is evaluated.",
+  "currency": "CAD",
+  "maxAdditionalSpendMinor": 0,
+  "expiresInHours": 24,
+  "adSetId": "REPLACE_WITH_AD_SET_ID",
+  "delivery": "OFF"
+}

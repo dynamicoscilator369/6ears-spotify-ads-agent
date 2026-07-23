@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tgz
+.last-pack-name
+.last-binary-archive
+.DS_Store
+.env
+.env.*
+.dev.vars
+packages/agent/.dev.vars
+packages/agent/.wrangler/
+coverage/
+*.log
+.idea/
+.vscode/
