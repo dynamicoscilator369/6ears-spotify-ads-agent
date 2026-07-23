@@ -30,6 +30,26 @@ import { pushLog } from "./state.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_EXAMPLES = path.resolve(__dirname, "../../../../examples/actions");
 
+/** Split on newlines, then soft-wrap long single lines for the mission log. */
+function softWrapLines(text, maxLen = 100) {
+  const out = [];
+  for (const para of String(text).split("\n")) {
+    if (para.length <= maxLen) {
+      out.push(para);
+      continue;
+    }
+    let rest = para;
+    while (rest.length > maxLen) {
+      let breakAt = rest.lastIndexOf(" ", maxLen);
+      if (breakAt < maxLen * 0.5) breakAt = maxLen;
+      out.push(rest.slice(0, breakAt).trimEnd());
+      rest = rest.slice(breakAt).trimStart();
+    }
+    if (rest) out.push(rest);
+  }
+  return out.length ? out : [""];
+}
+
 export function helpText() {
   return [
     "6EARS Spotify Ads Manager · Copilot Cockpit",
@@ -147,7 +167,8 @@ async function runAsk(state, question) {
       },
     });
     next = pushLog(next, `LLM ${result.provider} · ${result.model} · hits ${result.knowledgeHits}`, "ok");
-    for (const line of result.content.split("\n")) {
+    // Prefer natural newlines; also soft-break very long lines so the log wraps cleanly
+    for (const line of softWrapLines(result.content, 100)) {
       next = pushLog(next, line || " ");
     }
   } catch (e) {

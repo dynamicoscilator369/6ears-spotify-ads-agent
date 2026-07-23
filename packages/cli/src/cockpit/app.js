@@ -7,7 +7,8 @@ import { createState, pushLog, setInput } from "./state.js";
 import { bootstrap, handleCommand } from "./commands.js";
 
 const h = React.createElement;
-const MAX_VISIBLE = 18;
+// Log entries to keep on screen (each may wrap to multiple terminal rows)
+const MAX_VISIBLE = 24;
 
 function levelColor(level) {
   if (level === "ok") return "green";
@@ -55,7 +56,7 @@ function MissionLog({ log }) {
       borderStyle: "single",
       borderColor: "gray",
       paddingX: 1,
-      minHeight: MAX_VISIBLE + 2,
+      minHeight: 12,
       flexGrow: 1,
     },
     h(Text, { bold: true, color: "white" }, "MISSION LOG"),
@@ -63,10 +64,15 @@ function MissionLog({ log }) {
       ? h(Text, { dimColor: true }, "…")
       : visible.map((e, i) =>
           h(
-            Text,
-            { key: `${e.ts}-${i}-${e.text.slice(0, 12)}`, wrap: "truncate" },
-            h(Text, { dimColor: true }, `${e.ts} `),
-            h(Text, { color: levelColor(e.level) }, e.text)
+            Box,
+            { key: `${e.ts}-${i}-${e.text.slice(0, 16)}`, flexDirection: "column", width: "100%" },
+            // wrap (not truncate) so LLM answers reflow to terminal width
+            h(
+              Text,
+              { wrap: "wrap" },
+              h(Text, { dimColor: true }, `${e.ts} `),
+              h(Text, { color: levelColor(e.level), wrap: "wrap" }, e.text)
+            )
           )
         )
   );
@@ -79,9 +85,9 @@ function CommandDeck({ value, busy }) {
     h(Text, { bold: true, color: "green" }, "COMMAND DECK"),
     h(
       Text,
-      null,
+      { wrap: "wrap" },
       busy ? h(Text, { color: "yellow" }, "… working ") : h(Text, { color: "green" }, "› "),
-      h(Text, null, value),
+      h(Text, { wrap: "wrap" }, value),
       !busy ? h(Text, { color: "green" }, "▌") : null
     ),
     h(
