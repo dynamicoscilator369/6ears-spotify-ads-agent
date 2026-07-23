@@ -1,8 +1,12 @@
+/**
+ * Copilot Cockpit — Ink TUI without JSX (Node runs this as plain ESM).
+ */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, render } from "ink";
 import { createState, pushLog, setInput } from "./state.js";
 import { bootstrap, handleCommand } from "./commands.js";
 
+const h = React.createElement;
 const MAX_VISIBLE = 18;
 
 function levelColor(level) {
@@ -15,77 +19,76 @@ function levelColor(level) {
 function Header({ state }) {
   const mode = state.mode || "COPILOT";
   const online = state.agentOnline;
-  return (
-    <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-      <Box justifyContent="space-between">
-        <Text bold color="cyan">
-          6EARS SPOTIFY ADS MANAGER · COPILOT COCKPIT
-        </Text>
-        <Text bold color={mode === "COPILOT" ? "green" : "yellow"}>
-          {mode}
-        </Text>
-      </Box>
-      <Text>
-        agent{" "}
-        <Text color={online ? "green" : "red"}>{online ? "ONLINE" : "OFFLINE"}</Text>
-        {"  "}
-        <Text dimColor>{state.statusLine || "—"}</Text>
-      </Text>
-      {state.counts ? (
-        <Text dimColor>
-          artifacts {state.counts.artifacts ?? 0} · proposals {state.counts.proposals ?? 0} ·
-          reviews {state.counts.reviews ?? 0} · learnings {state.counts.learnings ?? 0}
-        </Text>
-      ) : (
-        <Text dimColor>metrics — (connect agent for live counts)</Text>
-      )}
-    </Box>
+  return h(
+    Box,
+    { flexDirection: "column", borderStyle: "round", borderColor: "cyan", paddingX: 1 },
+    h(
+      Box,
+      { justifyContent: "space-between" },
+      h(Text, { bold: true, color: "cyan" }, "6EARS SPOTIFY ADS MANAGER · COPILOT COCKPIT"),
+      h(Text, { bold: true, color: mode === "COPILOT" ? "green" : "yellow" }, mode)
+    ),
+    h(
+      Text,
+      null,
+      "agent ",
+      h(Text, { color: online ? "green" : "red" }, online ? "ONLINE" : "OFFLINE"),
+      "  ",
+      h(Text, { dimColor: true }, state.statusLine || "—")
+    ),
+    state.counts
+      ? h(
+          Text,
+          { dimColor: true },
+          `artifacts ${state.counts.artifacts ?? 0} · proposals ${state.counts.proposals ?? 0} · reviews ${state.counts.reviews ?? 0} · learnings ${state.counts.learnings ?? 0}`
+        )
+      : h(Text, { dimColor: true }, "metrics — (connect agent for live counts)")
   );
 }
 
 function MissionLog({ log }) {
   const visible = log.slice(-MAX_VISIBLE);
-  return (
-    <Box
-      flexDirection="column"
-      borderStyle="single"
-      borderColor="gray"
-      paddingX={1}
-      minHeight={MAX_VISIBLE + 2}
-      flexGrow={1}
-    >
-      <Text bold color="white">
-        MISSION LOG
-      </Text>
-      {visible.length === 0 ? (
-        <Text dimColor>…</Text>
-      ) : (
-        visible.map((e, i) => (
-          <Text key={`${e.ts}-${i}-${e.text.slice(0, 12)}`} wrap="truncate">
-            <Text dimColor>{e.ts} </Text>
-            <Text color={levelColor(e.level)}>{e.text}</Text>
-          </Text>
-        ))
-      )}
-    </Box>
+  return h(
+    Box,
+    {
+      flexDirection: "column",
+      borderStyle: "single",
+      borderColor: "gray",
+      paddingX: 1,
+      minHeight: MAX_VISIBLE + 2,
+      flexGrow: 1,
+    },
+    h(Text, { bold: true, color: "white" }, "MISSION LOG"),
+    visible.length === 0
+      ? h(Text, { dimColor: true }, "…")
+      : visible.map((e, i) =>
+          h(
+            Text,
+            { key: `${e.ts}-${i}-${e.text.slice(0, 12)}`, wrap: "truncate" },
+            h(Text, { dimColor: true }, `${e.ts} `),
+            h(Text, { color: levelColor(e.level) }, e.text)
+          )
+        )
   );
 }
 
 function CommandDeck({ value, busy }) {
-  return (
-    <Box flexDirection="column" borderStyle="round" borderColor="green" paddingX={1}>
-      <Text bold color="green">
-        COMMAND DECK
-      </Text>
-      <Text>
-        {busy ? <Text color="yellow">… working </Text> : <Text color="green">› </Text>}
-        <Text>{value}</Text>
-        {!busy && <Text color="green">▌</Text>}
-      </Text>
-      <Text dimColor>
-        /help /status /search /plan /prepare /packet /actions · free text = knowledge · q quit
-      </Text>
-    </Box>
+  return h(
+    Box,
+    { flexDirection: "column", borderStyle: "round", borderColor: "green", paddingX: 1 },
+    h(Text, { bold: true, color: "green" }, "COMMAND DECK"),
+    h(
+      Text,
+      null,
+      busy ? h(Text, { color: "yellow" }, "… working ") : h(Text, { color: "green" }, "› "),
+      h(Text, null, value),
+      !busy ? h(Text, { color: "green" }, "▌") : null
+    ),
+    h(
+      Text,
+      { dimColor: true },
+      "/help /status /search /plan /prepare /packet /actions · free text = knowledge · q quit"
+    )
   );
 }
 
@@ -181,18 +184,14 @@ function App() {
     }
   });
 
-  return (
-    <Box flexDirection="column" width="100%">
-      <Header state={state} />
-      <Box height={1}>
-        <Text> </Text>
-      </Box>
-      <MissionLog log={state.log} />
-      <Box height={1}>
-        <Text> </Text>
-      </Box>
-      <CommandDeck value={state.input} busy={state.busy} />
-    </Box>
+  return h(
+    Box,
+    { flexDirection: "column", width: "100%" },
+    h(Header, { state }),
+    h(Box, { height: 1 }, h(Text, null, " ")),
+    h(MissionLog, { log: state.log }),
+    h(Box, { height: 1 }, h(Text, null, " ")),
+    h(CommandDeck, { value: state.input, busy: state.busy })
   );
 }
 
@@ -206,6 +205,6 @@ export async function runCockpit() {
     return;
   }
 
-  const instance = render(React.createElement(App));
+  const instance = render(h(App));
   await instance.waitUntilExit();
 }
