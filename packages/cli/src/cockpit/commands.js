@@ -25,52 +25,29 @@ import {
   saveLlmKey,
   saveLlmSettings,
 } from "../llm/config.js";
-import { pushLog } from "./state.js";
+import { pushLog, pushBlock } from "./state.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_EXAMPLES = path.resolve(__dirname, "../../../../examples/actions");
-
-/** Split on newlines, then soft-wrap long single lines for the mission log. */
-function softWrapLines(text, maxLen = 100) {
-  const out = [];
-  for (const para of String(text).split("\n")) {
-    if (para.length <= maxLen) {
-      out.push(para);
-      continue;
-    }
-    let rest = para;
-    while (rest.length > maxLen) {
-      let breakAt = rest.lastIndexOf(" ", maxLen);
-      if (breakAt < maxLen * 0.5) breakAt = maxLen;
-      out.push(rest.slice(0, breakAt).trimEnd());
-      rest = rest.slice(breakAt).trimStart();
-    }
-    if (rest) out.push(rest);
-  }
-  return out.length ? out : [""];
-}
 
 export function helpText() {
   return [
     "6EARS Spotify Ads Manager · Copilot Cockpit",
     "",
+    "Scroll: PgUp / PgDn · ↑/↓ (empty input) · Ctrl+U / Ctrl+D · Ctrl+E = latest",
+    "",
     "Commands:",
     "  /help              this sheet",
     "  /status            refresh agent + mode",
     "  /search <query>    knowledge pack only",
-    "  /ask <question>    LLM copilot (needs API key)",
+    "  /ask <question>    LLM copilot (one answer block)",
     "  /chat on|off       free text uses LLM when on",
     "  /llm               show LLM connector status",
     "  /llm provider <id> openrouter|openai|xai|anthropic|custom",
     "  /llm model <name>  e.g. openai/gpt-4o-mini",
     "  /llm key <secret>  store API key (not printed back)",
     "  /llm clear-key     remove key for current provider",
-    "  /plan              create draft plan (template)",
-    "  /plans             list plans",
-    "  /prepare [file]    prepare action (default: create-draft-campaign.json)",
-    "  /packet [id]       Ads Manager COPILOT packet",
-    "  /actions           list proposals",
-    "  /approve <id> --digest <hex> --actor <email>",
+    "  /plan /prepare /packet /actions /approve …",
     "  /doctor            local + knowledge checks",
     "  /clear             clear mission log",
     "  quit / exit / q    leave cockpit",
@@ -156,7 +133,10 @@ async function runDoctor(state) {
 }
 
 async function runAsk(state, question) {
-  let next = pushLog(state, `ask: ${question.slice(0, 120)}${question.length > 120 ? "…" : ""}`);
+  let next = pushLog(
+    state,
+    `ask: ${question.slice(0, 120)}${question.length > 120 ? "…" : ""}`
+  );
   next = pushLog(next, "… calling LLM (grounded on knowledge pack)", "warn");
   try {
     const result = await askLlm(question, {
@@ -166,11 +146,9 @@ async function runAsk(state, question) {
         artistId: state.artist?.artistId || loadConfig().defaultArtist,
       },
     });
-    next = pushLog(next, `LLM ${result.provider} · ${result.model} · hits ${result.knowledgeHits}`, "ok");
-    // Prefer natural newlines; also soft-break very long lines so the log wraps cleanly
-    for (const line of softWrapLines(result.content, 100)) {
-      next = pushLog(next, line || " ");
-    }
+    // One question → one answer block (not a new log line per sentence)
+    const title = `LLM ${result.provider} · ${result.model} · hits ${result.knowledgeHits}`;
+    next = pushBlock(next, result.content, "ok", title);
   } catch (e) {
     next = pushLog(next, e.message || String(e), "err");
   }
@@ -370,9 +348,7 @@ async function runPacket(state, idArg) {
     const proposal = arr.find((p) => p.id === id);
     if (!proposal) return pushLog(next, `Proposal not found: ${id}`, "err");
     const text = formatExecutionPacket(proposal);
-    for (const line of text.split("\n")) {
-      next = pushLog(next, line);
-    }
+    next = pushBlock(next, text, "ok", `packet ${id.slice(0, 8)}…`);
   } catch (e) {
     next = pushLog(next, planErr(e), "err");
   }
@@ -464,9 +440,7 @@ export async function handleCommand(state, raw) {
   }
 
   if (line === "?" || lower === "help" || lower === "/help") {
-    let next = state;
-    for (const l of helpText().split("\n")) next = pushLog(next, l);
-    return { state: next };
+    return { state: pushBlock(state, helpText(), "info", "help") };
   }
 
   if (lower === "/clear") {
