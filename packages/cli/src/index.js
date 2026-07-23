@@ -775,8 +775,18 @@ async function runCli(cmd, sub, rest) {
     case "ask":
       await cmdAsk([sub, ...rest].filter(Boolean));
       break;
+    // Friendly aliases (people often omit the llm prefix)
+    case "set-key":
+      await cmdLlm("set-key", [sub, ...rest].filter(Boolean));
+      break;
+    case "clear-key":
+      await cmdLlm("clear-key", rest);
+      break;
     default:
       console.error(`Unknown command: ${cmd}`);
+      if (cmd === "set-key" || String(cmd).includes("key")) {
+        console.error("Hint: use  6ears-spotify-ads llm set-key");
+      }
       printHelp();
       process.exitCode = 1;
   }
